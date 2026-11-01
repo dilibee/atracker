@@ -18,7 +18,7 @@ Open http://localhost:5173/atracker/. Production base is `/atracker/`. Vite inte
 
 ## One-time setup
 
-1. In the existing Supabase project `pnnpiretbukbnaejxjsk`, run `scripts/schema.sql` in SQL Editor. This creates `atracker_docs`, owner-only RLS, realtime publication, and the private `outlines` bucket with user-folder RLS. Existing organizer tables remain separate.
+1. In the existing Supabase project `ndpijhfymehutmgqqhgu`, run `scripts/schema.sql` in SQL Editor. This creates `atracker_docs`, owner-only RLS, realtime publication, and the private `outlines` bucket with user-folder RLS. Existing organizer tables remain separate.
 2. Copy `.env.example` to `.env` yourself. Fill in the public Supabase URL and anon key, the service-role key, and `ATRACKER_USER_ID` (your Auth user UUID). Never share the service-role key or put it in a `VITE_*` variable. Trusted helper/CLI/reminder scripts load `.env`; the scanning agent must never read it.
 3. Run `npm run vapid` privately once and save its output to `.env`. Set `VAPID_SUBJECT` to your email contact. Keep the private key secret and keep keys stable so subscriptions stay valid.
 4. Configure repository variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_VAPID_PUBLIC_KEY`. Configure repository secrets `SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Enable GitHub Pages using Actions. The included deploy workflow builds `/atracker/`; publishing is a separate human action.

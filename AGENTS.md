@@ -11,7 +11,7 @@ odejs`.
 ## Context
 Dilibe wants one place to log every assignment (manually, with one or more due dates and optional steps). The app plans work backwards from each deadline so it is spread out, not crammed onto the last day. It sends iPhone reminders, and it can be edited from both the PC and the phone. Extras: a button to run a one-off LEARN scan (Codex, PC only), course-outline import for key dates, a color-coded dashboard, a calendar, and an admin/settings area. Look: red left rail, light grey background, blue accents, clock-plus-paper icon.
 
-The decided setup follows the existing **externals-organizer** pattern: Vite + React + TS PWA on GitHub Pages, data in the **existing Supabase project** (`pnnpiretbukbnaejxjsk`, same login), push notifications, and a LEARN scan that runs only on the PC. The scan reuses the **co-op-desk** Playwright-profile pattern.
+The decided setup follows the existing **externals-organizer** pattern: Vite + React + TS PWA on GitHub Pages, data in the **existing Supabase project** (`ndpijhfymehutmgqqhgu`, same login), push notifications, and a LEARN scan that runs only on the PC. The scan reuses the **co-op-desk** Playwright-profile pattern.
 
 ## Stack and reuse
 - New folder `assignments-tracker/`, scaffolded like `externals-organizer` (Vite 8, React 19, TS, Vitest, tsx scripts). The project's `CLAUDE.md` is just `@AGENTS.md`, and `AGENTS.md` holds the project rules.
