@@ -1,0 +1,38 @@
+{
+  "name": "atracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "browser": "tsx scripts/open-browser.ts",
+    "helper": "tsx scripts/helper.ts",
+    "at": "tsx scripts/at.ts",
+    "vapid": "tsx scripts/vapid.ts",
+    "reminders": "tsx scripts/send-reminders.ts",
+    "icons": "tsx scripts/icons.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "dotenv": "^18.0.9",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "playwright": "1.65.0-alpha-2026-10-30",
+    "@playwright/mcp": "^0.0.84",
+    "pdfjs-dist": "^6.4.299"
+  }
+}
