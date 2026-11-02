@@ -1,4 +1,6 @@
 import {createHash,randomUUID} from 'node:crypto';
+import {calendarDay} from '../src/lib/format';
+import {normalizedTitle} from './learn-parser';
 import type {Assignment} from '../src/lib/types';
 export function validateProposal(raw:unknown):Assignment{
  if(!raw||typeof raw!=='object')throw new Error('Expected an assignment object');
@@ -8,6 +10,6 @@ export function validateProposal(raw:unknown):Assignment{
  if(!Number.isInteger(a.estDays)||a.estDays<1||a.estDays>90)throw new Error('estDays must be 1–90');
  if(!['learn','outline'].includes(a.source))throw new Error('Source must be learn or outline');
  const steps=a.steps??[];if(!Array.isArray(steps)||steps.some(s=>!s||typeof s.title!=='string'||(s.dueDate&&!Number.isFinite(Date.parse(s.dueDate)))))throw new Error('Invalid steps');
- return {course:a.course.trim(),title:a.title.trim(),type:a.type||'Other',estDays:a.estDays,dueDates:a.dueDates.map(d=>({id:d.id||randomUUID(),label:d.label,datetime:new Date(d.datetime).toISOString()})),steps:steps.map(s=>({id:s.id||randomUUID(),title:s.title,done:false,...(s.dueDate?{dueDate:s.dueDate}:{})})),status:'active',source:a.source,weight:a.weight,link:typeof a.link==='string'?a.link:'',notes:typeof a.notes==='string'?a.notes:''};
+ return {course:a.course.trim(),title:a.title.trim(),type:a.type||'Other',estDays:a.estDays,dueDates:a.dueDates.map(d=>({id:d.id||randomUUID(),label:d.label,datetime:new Date(d.datetime).toISOString()})),steps:steps.map(s=>({id:s.id||randomUUID(),title:s.title,done:false,...(s.dueDate?{dueDate:s.dueDate}:{})})),status:'active',remindOnly:!!a.remindOnly,source:a.source,weight:a.weight,link:typeof a.link==='string'?a.link:'',notes:typeof a.notes==='string'?a.notes:''};
 }
-export const fingerprint=(a:Assignment)=>createHash('sha256').update(JSON.stringify([a.course.toLowerCase().trim(),a.title.toLowerCase().replace(/\s+/g,' ').trim(),a.dueDates.map(d=>new Date(d.datetime).toISOString()).sort()])).digest('hex');
+export const fingerprint=(a:Assignment)=>createHash('sha256').update(JSON.stringify([a.course.toLowerCase().trim(),normalizedTitle(a.title),a.dueDates.map(d=>calendarDay(d.datetime)).sort()])).digest('hex');

@@ -19,7 +19,7 @@ createServer(async(req,res)=>{
   try{
    let body='';for await(const chunk of req){body+=chunk;if(body.length>100000){res.writeHead(413);res.end();return}}
    const argv:unknown=JSON.parse(body);
-   if(!Array.isArray(argv)||argv.length>2||!argv.every(x=>typeof x==='string')||!['courses','outlines','propose','outline-done'].includes(argv[0]))throw new Error('Invalid CLI command');
+   if(!Array.isArray(argv)||argv.length>2||!argv.every(x=>typeof x==='string')||!['courses','scan-context','outlines','propose','outline-done'].includes(argv[0]))throw new Error('Invalid CLI command');
    const env={...process.env,DOTENV_CONFIG_QUIET:'true'};delete (env as NodeJS.ProcessEnv).ATRACKER_SCAN_TOKEN;
    execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...argv],{env,windowsHide:true,timeout:120000,maxBuffer:8*1024*1024},(error,stdout)=>{res.writeHead(error?400:200,{'Content-Type':'text/plain'});res.end(error?'CLI failed; check proposal or local configuration.':stdout)});
   }catch{res.writeHead(400);res.end('Invalid CLI request')}
@@ -50,7 +50,7 @@ createServer(async(req,res)=>{
   const mcpArgs=[resolve('node_modules/@playwright/mcp/cli.js').replace(/\\/g,'/'),'--ignore-roots','--output-dir',toolDir.replace(/\\/g,'/'),'--executable-path',chromium.executablePath().replace(/\\/g,'/'),'--user-data-dir',resolve('data/browser').replace(/\\/g,'/')];
   const browserConfig=outlineOnly?[]:['-c',`mcp_servers.playwright.command=${JSON.stringify(process.execPath.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.cwd=${JSON.stringify(toolDir.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.args=${JSON.stringify(mcpArgs)}`];
   const cli=(args:string[])=>new Promise<string>((accept,reject)=>execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...args],{env:{...process.env,DOTENV_CONFIG_QUIET:'true'},windowsHide:true,timeout:120000,maxBuffer:32*1024*1024},(error,stdout,stderr)=>error?reject(new Error(redact(stderr||error.message))):accept(stdout)));
-  let prompt='Follow docs/scan-runbook.md completely. Never read .env, data/browser files, or any service-role key. Use only the at broker CLI for proposals. Do not commit, push or deploy.';
+  let prompt='Follow docs/scan-runbook.md completely. In the signed-in Playwright tab use page fetch() for D2L REST APIs, enumerate ALL active org units, include today from Toronto midnight, and normalize with scripts/learn-parser.ts (StartDay for all-day events, never exclusive EndDay). Load scan-context for settings.sections and existing assignments; filter sections/groups and dedupe by course, normalized title and Toronto date. Never read .env, data/browser files, or any service-role key. Use only the at broker CLI for proposals. Do not commit, push or deploy.';
   const outlines: {path:string;error?:string;pages?:unknown}[]=[];
   let courseCodes=new Set<string>();
   if(outlineOnly){

@@ -1,6 +1,7 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve,basename} from 'node:path';
 
+import {duplicateItem} from './learn-parser';
 import {htmlOutlineText} from './outline-text';
 import {fingerprint,validateProposal} from './proposals';
 import type {Assignment} from '../src/lib/types';
@@ -20,9 +21,10 @@ try{
  if(command==='propose'){
   const assignment=validateProposal(JSON.parse(arg||'null')),id=fingerprint(assignment);
   const existing=await docs('assignments');
-  if(existing.some(r=>fingerprint(r.data as Assignment)===id)){console.log('Already assigned');process.exit(0)}
+  if(existing.some(r=>duplicateItem(r.data as Assignment,assignment))){console.log('Already assigned');process.exit(0)}
   const {error}=await db.from('atracker_docs').upsert({user_id,collection:'proposals',id,data:{assignment,status:'pending',createdAt:new Date().toISOString()}},{onConflict:'user_id,collection,id',ignoreDuplicates:true});if(error)throw error;console.log('Proposal saved: '+id);
- }else if(command==='courses'){console.log(JSON.stringify(await docs('courses')))}
+ }else if(command==='scan-context'){console.log(JSON.stringify({settings:(await docs('settings')).find(r=>r.id==='main')?.data||{},assignments:(await docs('assignments')).map(r=>r.data)}))}
+ else if(command==='courses'){console.log(JSON.stringify(await docs('courses')))}
  else if(command==='outlines'){
   const data=[];for(let offset=0;;offset+=100){const page=await db.storage.from('outlines').list(user_id,{limit:100,offset,sortBy:{column:'name',order:'asc'}});if(page.error)throw page.error;data.push(...page.data.filter(f=>f.id));if(page.data.length<100)break}
   await mkdir('data/outlines',{recursive:true});const imported=new Set((await docs('scanRuns')).filter(r=>r.id.startsWith('outline-')).map(r=>r.data.path));
