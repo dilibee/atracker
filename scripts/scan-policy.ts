@@ -6,14 +6,5 @@ export function scanEnvironment(source:NodeJS.ProcessEnv){
  return env;
 }
 export function scanPermissionArgs(){
- const config:Record<string,string>={
-  default_permissions:'atracker-scan',approval_policy:'never',
-  'permissions.atracker-scan.filesystem.":minimal"':'read',
-  'permissions.atracker-scan.filesystem.":workspace_roots"."."':'read',
-  'permissions.atracker-scan.filesystem.":workspace_roots".".env"':'deny',
-  'permissions.atracker-scan.filesystem.":workspace_roots".".env.*"':'deny',
-  'permissions.atracker-scan.filesystem.":workspace_roots"."data/browser"':'deny',
-  'permissions.atracker-scan.filesystem.":workspace_roots"."scripts/server-db.ts"':'deny',
- };
- return ['--ignore-user-config','--strict-config',...Object.entries(config).flatMap(([key,value])=>['-c',key+'='+JSON.stringify(value)]),'-c','permissions.atracker-scan.network.enabled=true'];
+ return ['-s','workspace-write','-c','approval_policy="never"'];
 }

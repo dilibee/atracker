@@ -7,7 +7,7 @@ import type {Assignment} from '../src/lib/types';
 // During a scan the CLI delegates to the trusted helper; it never loads dotenv.
 if(process.env.ATRACKER_SCAN_TOKEN){
  try{
-  const response=await fetch('http://127.0.0.1:5199/agent-cli',{method:'POST',headers:{Authorization:'Bearer '+process.env.ATRACKER_SCAN_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(process.argv.slice(2)),signal:AbortSignal.timeout(120000)});
+  const response=await fetch(`http://127.0.0.1:${process.env.ATRACKER_HELPER_PORT||'5199'}/agent-cli`,{method:'POST',headers:{Authorization:'Bearer '+process.env.ATRACKER_SCAN_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(process.argv.slice(2)),signal:AbortSignal.timeout(120000)});
   const output=await response.text();console.log(output);if(!response.ok)process.exitCode=1;
  }catch{console.error('Scan CLI connection failed');process.exitCode=1}
 }else await main();
