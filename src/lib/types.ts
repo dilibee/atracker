@@ -1,5 +1,5 @@
 export interface Course {code:string;name:string;color:string}
-export interface Assignment {course:string;title:string;type:string;dueDates:{id:string;label:string;datetime:string}[];estDays:number;steps:{id:string;title:string;done:boolean;dueDate?:string}[];weight?:number;link:string;notes:string;status:'active'|'done';source:'manual'|'learn'|'outline'}
+export interface Assignment {course:string;title:string;type:string;dueDates:{id:string;label:string;datetime:string}[];estDays:number;remindOnly?:boolean;steps:{id:string;title:string;done:boolean;dueDate?:string}[];weight?:number;link:string;notes:string;status:'active'|'done';source:'manual'|'learn'|'outline'}
 export interface Task {assignmentId:string;stepId?:string;date:string;title:string;done:boolean;pinned:boolean;catchUp?:boolean;milestoneId:string}
 export interface Settings {bufferDays:number;maxTasksPerDay:number;blackoutDates:string[];morning:string;evening:string;timezone:string}
 export interface Proposal {assignment:Assignment;status:'pending'|'approved'|'rejected';createdAt:string}

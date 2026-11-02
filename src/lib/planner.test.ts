@@ -81,3 +81,18 @@ it('removes Catch-up when a missed task is pinned to a future date',()=>{
  const next=plan({a},{[id]:{...t,date:'2026-11-12',pinned:true,catchUp:true}},defaults,'2026-11-11');
  expect(next.tasks[id]).toMatchObject({date:'2026-11-12',pinned:true,catchUp:false});
 });
+
+describe('reminder-only assignments',()=>{
+ it('creates no work or risk even for late milestones with steps',()=>{
+  expect(plan({a:{...a,remindOnly:true,steps:[{id:'s',title:'Read',done:false}]}},{},{...defaults,maxTasksPerDay:1},'2026-11-20')).toEqual({tasks:{},atRisk:[]});
+ });
+ it('removes existing pinned, completed and catch-up tasks when enabled',()=>{
+  const previous=plan({a},{},defaults,'2026-11-01').tasks;
+  for(const t of Object.values(previous)){t.pinned=true;t.done=true;t.catchUp=true;}
+  expect(plan({a:{...a,remindOnly:true}},previous,defaults,'2026-11-20')).toEqual({tasks:{},atRisk:[]});
+ });
+ it('does not affect normal assignments in a mixed plan',()=>{
+  const normal=plan({a},{},defaults,'2026-11-01');
+  expect(plan({a,b:{...a,remindOnly:true}},{},defaults,'2026-11-01')).toEqual(normal);
+ });
+});

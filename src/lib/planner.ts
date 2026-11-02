@@ -8,11 +8,11 @@ export function plan(assignments:Record<string,Assignment>,previous:Record<strin
  const put=(id:string,t:Task)=>{tasks[id]=t;if(!t.done)load[t.date]=(load[t.date]||0)+1;};
  for(const [id,t] of Object.entries(previous)) {
   const a=assignments[t.assignmentId];
-  if(a?.status!=='active'||!a.dueDates.some(m=>m.id===t.milestoneId)||
+  if(a?.status!=='active'||a.remindOnly||!a.dueDates.some(m=>m.id===t.milestoneId)||
     (t.stepId?!a.steps.some(s=>s.id===t.stepId):a.steps.length>0))continue;
   if(t.done||t.pinned||t.catchUp||t.date<today)put(id,{...t,...(t.catchUp&&t.date>today?{catchUp:false}:{}),...(!t.done&&t.date<today?{date:today,catchUp:true}:{})});
  }
- const entries=Object.entries(assignments).flatMap(([id,a])=>a.status==='done'?[]:a.dueDates.map(m=>({id,a,m,due:day(new Date(m.datetime),settings.timezone)}))).sort((a,b)=>a.due.localeCompare(b.due));
+ const entries=Object.entries(assignments).flatMap(([id,a])=>a.status==='done'||a.remindOnly?[]:a.dueDates.map(m=>({id,a,m,due:day(new Date(m.datetime),settings.timezone)}))).sort((a,b)=>a.due.localeCompare(b.due));
  for(const {id,a,m,due} of entries){
   const target=addDays(due,-Math.max(0,settings.bufferDays));
   const end=target>=due?addDays(due,-1):target;
