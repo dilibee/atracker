@@ -26,7 +26,7 @@ begin
 end $$;
 
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
-values ('outlines','outlines',false,20971520,array['application/pdf'])
+values ('outlines','outlines',false,20971520,array['application/pdf','text/html'])
 on conflict (id) do update set public=false, file_size_limit=excluded.file_size_limit, allowed_mime_types=excluded.allowed_mime_types;
 drop policy if exists "own atracker outlines" on storage.objects;
 create policy "own atracker outlines" on storage.objects for all to authenticated

@@ -27,12 +27,20 @@ createServer(async(req,res)=>{
  res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Private-Network','true');res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');
  if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
  if(req.url==='/health'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,busy}));return}
- if(req.url!=='/scan'||req.method!=='POST'){res.writeHead(404);res.end();return}
+ if(!['/scan','/outlines','/browser'].includes(req.url||'')||req.method!=='POST'){res.writeHead(404);res.end();return}
  if(!req.headers['content-type']?.startsWith('application/json')){res.writeHead(415);res.end('JSON required');return}
- if(busy){res.writeHead(409);res.end('A scan is already running');return}
+ if(busy){res.writeHead(409);res.end('A scan or sign-in window is already open. Close the LEARN window or wait for the check to finish.');return}
+ if(req.url==='/browser'){
+  busy=true;
+  const child=spawn(process.execPath,['--import','tsx',resolve('scripts/open-browser.ts')],{cwd:resolve('.'),env:scanEnvironment(process.env),windowsHide:true,stdio:['ignore','ignore','ignore','ipc']});
+  child.once('error',()=>{busy=false;if(!res.headersSent){res.writeHead(500);res.end('Could not open the LEARN window.')}});
+  child.on('message',(message:unknown)=>{if(res.headersSent)return;if(message&&typeof message==='object'&&'ready' in message){res.writeHead(202);res.end('LEARN sign-in window open')}else if(message&&typeof message==='object'&&'error' in message){res.writeHead(500);res.end(String(message.error))}});
+  child.once('exit',()=>{busy=false;if(!res.headersSent){res.writeHead(500);res.end('LEARN window closed before sign-in was ready. Try again.')}});return;
+ }
+ const outlineOnly=req.url==='/outlines';
  busy=true;const id=randomUUID(),startedAt=new Date().toISOString();let log='';
  try{
-  await save(id,{status:'running',startedAt,log:'Starting Codex scan'});
+  await save(id,{status:'running',startedAt,log:outlineOnly?'Checking outline dates':'Starting Codex scan'});
   await mkdir('data/scan-logs',{recursive:true});
   const summary=resolve('data/scan-logs',id+'.txt');
   // Resolve the installed JS entrypoint; do not use a shell to invoke user-controlled text.
@@ -40,7 +48,8 @@ createServer(async(req,res)=>{
   const toolDir=resolve('data/scan-tools');await mkdir(toolDir,{recursive:true});
   const mcpArgs=[resolve('node_modules/@playwright/mcp/cli.js').replace(/\\/g,'/'),'--ignore-roots','--output-dir',toolDir.replace(/\\/g,'/'),'--executable-path',chromium.executablePath().replace(/\\/g,'/'),'--user-data-dir',resolve('data/browser').replace(/\\/g,'/')];
   // Named permission profiles fail closed on unsupported Codex versions.
-  const args=[npmRoot,'exec',...scanPermissionArgs(),'--output-last-message',summary,'-c',`mcp_servers.playwright.command=${JSON.stringify(process.execPath.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.cwd=${JSON.stringify(toolDir.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.args=${JSON.stringify(mcpArgs)}`,'Follow docs/scan-runbook.md completely. Never read .env, data/browser files, or any service-role key. Use only the at CLI for proposals. Do not commit, push, or deploy.'];
+  const browserConfig=outlineOnly?[]:['-c',`mcp_servers.playwright.command=${JSON.stringify(process.execPath.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.cwd=${JSON.stringify(toolDir.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.args=${JSON.stringify(mcpArgs)}`];
+  const args=[npmRoot,'exec',...scanPermissionArgs(),'--output-last-message',summary,...browserConfig,(outlineOnly?'Follow the OUTLINE-ONLY mode in docs/scan-runbook.md. Do not open LEARN or use Playwright. ':'Follow docs/scan-runbook.md completely. ')+'Never read .env, data/browser files, or any service-role key. Use only the at CLI for proposals. Process both PDF and HTML outlines through at outlines and mark each successfully reviewed file with outline-done. Do not commit, push, or deploy.'];
   const env=scanEnvironment(process.env);
   scanToken=randomUUID();env.ATRACKER_SCAN_TOKEN=scanToken;
   const child=spawn(process.execPath,args,{cwd:resolve('.'),env,windowsHide:true,stdio:['ignore','pipe','ignore']});

@@ -3,7 +3,7 @@ export interface Assignment {course:string;title:string;type:string;dueDates:{id
 export interface Task {assignmentId:string;stepId?:string;date:string;title:string;done:boolean;pinned:boolean;catchUp?:boolean;milestoneId:string}
 export interface Settings {bufferDays:number;maxTasksPerDay:number;blackoutDates:string[];morning:string;evening:string;timezone:string}
 export interface Proposal {assignment:Assignment;status:'pending'|'approved'|'rejected';createdAt:string}
-export interface ScanRun {status:string;log:string;startedAt:string;finishedAt?:string}
+export interface ScanRun {status:string;log:string;startedAt:string;finishedAt?:string;path?:string}
 export interface Collections {courses:Course;assignments:Assignment;tasks:Task;settings:Settings;proposals:Proposal;pushSubs:PushSubscriptionJSON;reminderLog:{sentAt:string};scanRuns:ScanRun}
 export const COLLECTIONS=['courses','assignments','tasks','settings','proposals','pushSubs','reminderLog','scanRuns'] as const;
 export type CollectionName=typeof COLLECTIONS[number];

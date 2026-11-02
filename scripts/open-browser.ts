@@ -17,9 +17,11 @@ try {
   const closed = new Promise<void>((done) => context.once("close", () => done()));
   const page = context.pages()[0] ?? await context.newPage();
   await page.goto("https://learn.uwaterloo.ca");
+  process.send?.({ready:true});
   await closed;
 } catch (e) {
   const message = (e as Error).message;
+  process.send?.({error:'Could not open LEARN. Close any existing sign-in window and check that Playwright Chromium is installed.'});
   console.error(/SingletonLock|ProcessSingleton|profile.*(use|lock)|user data directory.*use/i.test(message)
     ? "The Codex browser profile is in use. Close its window or wait for the check to finish, then try again."
     : `Couldn't open the sign-in window: ${message}`);
