@@ -6,3 +6,5 @@
 .helper-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}.helper-actions button{flex:0 1 auto;max-width:100%;white-space:normal}.admin-grid>section{min-width:0}@media(max-width:600px){.helper-actions{flex-direction:column;align-items:stretch}.helper-actions button{width:100%}}
 
 .reminder-toggle{flex-direction:row;align-items:center}.day b.reminder-deadline{font-size:10px;font-weight:500;border-radius:5px;background:#f1f2f4;padding:2px 4px}.tomorrow-strip p{overflow-wrap:anywhere}
+
+.assignment-notes,.task .assignment-notes{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;white-space:normal;min-width:0;max-width:100%;margin-top:4px;color:#64748b;font-size:12px;line-height:1.5;font-weight:400}.goal{min-width:0}
