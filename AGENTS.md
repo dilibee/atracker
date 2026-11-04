@@ -69,6 +69,7 @@ Dilibe doesn't want time planning. The plan is a dated to-do checklist.
 - Reminders are de-duplicated through `reminderLog`.
 
 ## LEARN scan and outline import (PC only, run by Codex)
+- A nightly unattended scan after backup is allowed through the local helper. It must stop for signed-out state without login interaction; results remain proposals for Dilibe to approve. Never submit coursework or apply proposals automatically.
 - `npm run browser` opens the Playwright profile (`data/browser/`, gitignored) so Dilibe can sign into LEARN once.
 - `npm run helper` starts a local server on `localhost:5199` with CORS and the `Access-Control-Allow-Private-Network` header. The deployed site pings it, and Admin shows the scan button only when it answers. Pressing the button calls `POST /scan`.
 - The helper runs `codex exec` with the Playwright MCP and the runbook in `docs/scan-runbook.md`:

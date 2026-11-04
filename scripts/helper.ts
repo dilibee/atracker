@@ -9,8 +9,10 @@ import {launchCodex,diagnostic,redact} from './codex-runner';
 import {validateProposal} from './proposals';
 import {serverDB,owner} from './server-db';
 import {waitForKeepalive,HELPER_REQUEST_TIMEOUT_MS} from './keepalive-lock';
+import {scanResult} from './scan-result';
 const port=Number(process.env.ATRACKER_HELPER_PORT||5199);
 const db=serverDB(),user_id=owner();let busy=false;let scanToken='';
+let scanState: {id:string;status:string}|undefined;
 const allowed=new Set([process.env.APP_ORIGIN,'http://localhost:5173','http://127.0.0.1:5173'].filter(Boolean));
 const save=async(id:string,data:unknown)=>{const {error}=await db.from('atracker_docs').upsert({user_id,collection:'scanRuns',id,data});if(error)throw error};
 createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
@@ -31,6 +33,7 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
  res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Private-Network','true');res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');
  if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
  if(req.url==='/health'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,busy}));return}
+ if(req.url==='/scan-status'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(scanState??{status:'idle'}));return}
  if(!['/scan','/outlines','/browser'].includes(req.url||'')||req.method!=='POST'){res.writeHead(404);res.end();return}
  if(!req.headers['content-type']?.startsWith('application/json')){res.writeHead(415);res.end('JSON required');return}
  if(busy){res.writeHead(409);res.end('A scan or sign-in window is already open. Close the LEARN window or wait for the check to finish.');return}
@@ -51,6 +54,7 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
  busy=true;const id=randomUUID(),startedAt=new Date().toISOString();let log='';
  try{
   await save(id,{status:'running',startedAt,log:outlineOnly?'Checking outline dates':'Starting Codex scan'});
+  scanState={id,status:'running'};
   await mkdir('data/scan-logs',{recursive:true});
   const summary=resolve('data/scan-logs',id+'.txt');
   const toolDir=resolve('data/scan-tools');await mkdir(toolDir,{recursive:true});
@@ -74,6 +78,7 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
   const timeout=setTimeout(()=>{log='Scan exceeded 30 minutes';child.kill()},30*60*1000);
   let finished=false;
   const finish=async(status:string)=>{if(finished)return;finished=true;clearTimeout(timeout);try{const text=await readFile(summary,'utf8').catch(()=>'');
+   if(!outlineOnly)status=scanResult(status,text);
    if(status==='completed'&&outlineOnly){
     try{const result=JSON.parse(text);if(!Array.isArray(result.files))throw new Error('Expected files array');
      const seen=new Set<string>();
@@ -86,8 +91,8 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
      log+='\n'+String(result.notes||'');
     }catch(e){status='failed';log+='\n'+redact(e instanceof Error?e.message:String(e))}
    }
-   await save(id,{status,startedAt,finishedAt:new Date().toISOString(),log:[log||status,redact(text.slice(0,20000))].filter(Boolean).join('\n\n')})}catch{console.error('Could not save scan result')}finally{busy=false;scanToken=''}};
+   await save(id,{status,startedAt,finishedAt:new Date().toISOString(),log:[log||status,redact(text.slice(0,20000))].filter(Boolean).join('\n\n')});scanState={id,status}}catch{scanState={id,status:'failed'};console.error('Could not save scan result')}finally{busy=false;scanToken=''}};
   child.once('error',error=>{log=redact('Could not launch Codex: '+error.message);void finish('failed')});child.once('close',(code,signal)=>{log=[log,code===0?'Scan completed. Review proposals.':'Codex scan failed.',diagnostic(code,signal,stderr)].filter(Boolean).join('\n');void finish(code===0&&!log.includes('exceeded')?'completed':'failed')});
   res.writeHead(202,{'Content-Type':'application/json'});res.end(JSON.stringify({id}));
- }catch(e){busy=false;scanToken='';const message=redact(e instanceof Error?e.message:String(e));await save(id,{status:'failed',startedAt,finishedAt:new Date().toISOString(),log:message}).catch(()=>{});res.writeHead(500);res.end(message)}
+ }catch(e){busy=false;scanToken='';scanState={id,status:'failed'};const message=redact(e instanceof Error?e.message:String(e));await save(id,{status:'failed',startedAt,finishedAt:new Date().toISOString(),log:message}).catch(()=>{});res.writeHead(500);res.end(message)}
 }).listen(port,'127.0.0.1',()=>console.log(`ATracker helper listening on http://localhost:${port}`));
