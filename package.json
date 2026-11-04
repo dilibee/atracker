@@ -14,7 +14,9 @@
     "at": "tsx scripts/at.ts",
     "vapid": "tsx scripts/vapid.ts",
     "reminders": "tsx scripts/send-reminders.ts",
-    "icons": "tsx scripts/icons.ts"
+    "icons": "tsx scripts/icons.ts",
+    "keepalive": "tsx scripts/learn-keepalive.ts",
+    "backup": "tsx scripts/backup.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

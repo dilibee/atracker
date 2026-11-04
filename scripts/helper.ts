@@ -8,6 +8,7 @@ import {scanEnvironment} from './scan-policy';
 import {launchCodex,diagnostic,redact} from './codex-runner';
 import {validateProposal} from './proposals';
 import {serverDB,owner} from './server-db';
+import {waitForKeepalive} from './keepalive-lock';
 const port=Number(process.env.ATRACKER_HELPER_PORT||5199);
 const db=serverDB(),user_id=owner();let busy=false;let scanToken='';
 const allowed=new Set([process.env.APP_ORIGIN,'http://localhost:5173','http://127.0.0.1:5173'].filter(Boolean));
@@ -33,6 +34,12 @@ createServer(async(req,res)=>{
  if(!['/scan','/outlines','/browser'].includes(req.url||'')||req.method!=='POST'){res.writeHead(404);res.end();return}
  if(!req.headers['content-type']?.startsWith('application/json')){res.writeHead(415);res.end('JSON required');return}
  if(busy){res.writeHead(409);res.end('A scan or sign-in window is already open. Close the LEARN window or wait for the check to finish.');return}
+ busy=true;
+ try{
+  if(!await waitForKeepalive(resolve(import.meta.dirname,'../data/logs/learn-keepalive.lock'))){
+   busy=false;res.writeHead(409);res.end('A scan or sign-in window is already open. Close the LEARN window or wait for the check to finish.');return;
+  }
+ }catch{busy=false;res.writeHead(500);res.end('Could not check LEARN profile availability.');return}
  if(req.url==='/browser'){
   busy=true;
   const child=spawn(process.execPath,['--import','tsx',resolve('scripts/open-browser.ts')],{cwd:resolve('.'),env:scanEnvironment(process.env),windowsHide:true,stdio:['ignore','ignore','ignore','ipc']});
