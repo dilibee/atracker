@@ -2,7 +2,7 @@ import { it, expect, vi } from 'vitest';
 import { mkdtemp, rm, writeFile, readFile, stat, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { takeIdleKeepaliveLock, takeKeepaliveLock, waitForKeepalive } from './keepalive-lock';
+import { HELPER_REQUEST_TIMEOUT_MS, KEEPALIVE_WAIT_MS, takeIdleKeepaliveLock, takeKeepaliveLock, waitForKeepalive } from './keepalive-lock';
 
 async function fixture(run: (path: string) => Promise<void>) {
   const dir = await mkdtemp(join(tmpdir(), 'keepalive-test-'));
@@ -70,3 +70,8 @@ it('fails closed and releases the lock if the health recheck fails', async () =>
   await expect(takeIdleKeepaliveLock(path, async () => { throw new Error('offline'); })).rejects.toThrow('offline');
   expect(await waitForKeepalive(path, 0)).toBe(true);
 }));
+
+it('budgets a full slow visit plus margin within normal helper request handling', () => {
+  expect(KEEPALIVE_WAIT_MS).toBeGreaterThan(60_000 + 20_000 + 35_000);
+  expect(KEEPALIVE_WAIT_MS).toBeLessThan(HELPER_REQUEST_TIMEOUT_MS);
+});

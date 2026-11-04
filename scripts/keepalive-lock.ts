@@ -3,6 +3,12 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import { LEARN_NAVIGATION_MS, LEARN_SETTLE_MS, COOKIE_FLUSH_MS } from './learn-session.ts';
+
+// Navigation, settle, flush, plus launch/close and filesystem margin.
+export const KEEPALIVE_WAIT_MS = LEARN_NAVIGATION_MS + LEARN_SETTLE_MS + COOKIE_FLUSH_MS + 20_000;
+export const HELPER_REQUEST_TIMEOUT_MS = 300_000;
+
 const staleAfter = 3 * 60_000;
 const lockFs: {
   readFile: (path: string, encoding: 'utf8') => Promise<string>;
@@ -80,7 +86,7 @@ export async function takeKeepaliveLock(path: string, fs = lockFs): Promise<(() 
     }
   };
 }
-export async function waitForKeepalive(path: string, timeout = 90_000, poll = 250, fs = lockFs): Promise<boolean> {
+export async function waitForKeepalive(path: string, timeout = KEEPALIVE_WAIT_MS, poll = 250, fs = lockFs): Promise<boolean> {
   const deadline = Date.now() + timeout;
   while (await keepaliveLocked(path, fs)) {
     const remaining = deadline - Date.now();

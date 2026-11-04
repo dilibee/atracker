@@ -4,7 +4,8 @@ import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
-import type { BrowserContext, Page } from "playwright";
+import type { BrowserContext } from "playwright";
+import { COOKIE_FLUSH_MS, enableSessionRestore, persistLearnSession, visitLearn, type VisitResult } from './learn-session.ts';
 import { untilTime } from './until-time.ts';
 import { takeIdleKeepaliveLock } from './keepalive-lock.ts';
 
@@ -33,26 +34,8 @@ async function checkRunning(): Promise<boolean> {
   return state.busy;
 }
 
-type Result = { status: "signed-in" | "signed-out" | "error"; host: string };
-async function visit(page: Page, url: string): Promise<Result> {
-  let status: Result["status"] = "error";
-  try {
-    await page.goto(url, { waitUntil: "load", timeout: 60_000 });
-    await sleep(5_000);
-    const host = new URL(page.url()).hostname;
-    const passwordVisible = await page.locator('input[type="password"]:visible').count() > 0;
-    status = host !== "learn.uwaterloo.ca" || !new URL(page.url()).pathname.startsWith("/d2l/") || passwordVisible
-      ? "signed-out" : "signed-in";
-  } catch {
-    // Keep the final host even when navigation or inspection failed.
-  }
-  let host = "unknown";
-  try { host = new URL(page.url()).hostname || "unknown"; } catch {}
-  return { status, host };
-}
-
 async function round() {
-  let learn: Result = { status: "error", host: "unknown" };
+  let learn: VisitResult = { status: "error", host: "unknown" };
   let note = "";
   let context: BrowserContext | undefined;
   let release: (() => Promise<void>) | undefined;
@@ -71,9 +54,14 @@ async function round() {
         const require = createRequire(resolve(ROOT, "node_modules/@playwright/mcp/package.json"));
         ({ chromium } = require("playwright"));
       }
+      await enableSessionRestore(profile);
       context = await chromium.launchPersistentContext(profile, { headless: true, viewport: null });
       const page = context.pages()[0] ?? await context.newPage();
-      learn = await visit(page, "https://learn.uwaterloo.ca/d2l/home");
+      learn = await visitLearn(page, "https://learn.uwaterloo.ca/d2l/home");
+      if (learn.status === 'signed-in') {
+        await persistLearnSession(context);
+        await sleep(COOKIE_FLUSH_MS);
+      }
       }
     }
   } catch (error) {
@@ -93,8 +81,8 @@ while (Date.now() < deadline) {
   const started = Date.now();
   try {
     await round();
-  } catch (error) {
-    console.error(`${new Date().toISOString()} keepalive round failed:`, error);
+  } catch {
+    console.error(`${new Date().toISOString()} keepalive round failed`);
   }
   const delay = Math.min(Math.max(0, interval - (Date.now() - started)), deadline - Date.now());
   if (delay > 0) await sleep(delay);

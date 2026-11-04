@@ -8,12 +8,12 @@ import {scanEnvironment} from './scan-policy';
 import {launchCodex,diagnostic,redact} from './codex-runner';
 import {validateProposal} from './proposals';
 import {serverDB,owner} from './server-db';
-import {waitForKeepalive} from './keepalive-lock';
+import {waitForKeepalive,HELPER_REQUEST_TIMEOUT_MS} from './keepalive-lock';
 const port=Number(process.env.ATRACKER_HELPER_PORT||5199);
 const db=serverDB(),user_id=owner();let busy=false;let scanToken='';
 const allowed=new Set([process.env.APP_ORIGIN,'http://localhost:5173','http://127.0.0.1:5173'].filter(Boolean));
 const save=async(id:string,data:unknown)=>{const {error}=await db.from('atracker_docs').upsert({user_id,collection:'scanRuns',id,data});if(error)throw error};
-createServer(async(req,res)=>{
+createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
  // Only a live scanning CLI can use this credential-free broker. No browser CORS.
  if(req.url==='/agent-cli'){
   if(req.method!=='POST'||!scanToken||req.headers.origin||req.headers.authorization!=='Bearer '+scanToken){res.writeHead(403);res.end();return}
