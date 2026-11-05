@@ -1,4 +1,4 @@
-import {deadlineDay} from './planner';
+import {deadlineDay} from './planner.ts';
 import type {Course,Task} from './types';
 export const calendarDay=(value:string|Date)=>value instanceof Date?deadlineDay(value.toISOString(),'America/Toronto'):deadlineDay(value,'America/Toronto');
 export function longDate(value:string|Date){const date=calendarDay(value),n=Number(date.slice(8)),suffix=n%100>=11&&n%100<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return `${new Date(date+'T12:00:00Z').toLocaleString('en-US',{month:'long',timeZone:'UTC'})} ${n}${suffix}, ${date.slice(0,4)}`}

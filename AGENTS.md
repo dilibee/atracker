@@ -106,3 +106,5 @@ Dilibe doesn't want time planning. The plan is a dated to-do checklist.
 - Add a sample assignment on the PC and confirm it appears on the phone (realtime).
 - Run the reminders workflow by hand (`workflow_dispatch`) and confirm a push arrives on the iPhone.
 - With the helper running, press "Run LEARN scan" and confirm proposals appear. Approving one creates an assignment and its scheduled sessions.
+
+LEARN scans require the standalone final marker ATRACKER_SCAN_COMPLETE before recording completed; signed-out results use ATRACKER_SCAN_NEEDS_SIGNIN, and all other missing-marker results fail. Outline JSON mode retains its separate validation. In scan agents use Node 24+ `node scripts/at.ts <command>` (broker only), avoiding npm/tsx startup userInfo failures in the Windows sandbox. Parser scripts can likewise run natively with explicit .ts imports. `learn-keepalive.ts --once` is owned by Overnight's all-day sign-in keeper; keep headless operation and helper/profile lock checks.

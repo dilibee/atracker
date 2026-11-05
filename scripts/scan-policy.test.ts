@@ -7,3 +7,8 @@ it('allows only runtime environment and drops credentials and preload hooks',()=
 it('uses supported sandbox flags without unsafe fallback',()=>{
  expect(scanPermissionArgs()).toEqual(['-s','workspace-write','-c','approval_policy="never"']);
 });
+
+it('preserves Windows identity and system paths without allowing arbitrary credentials',()=>{
+ const runtime={USERPROFILE:'fake-profile',USERNAME:'fake-user',USERDOMAIN:'fake-domain',HOMEDRIVE:'C:',HOMEPATH:'fake-home',SystemRoot:'fake-windows'};
+ expect(scanEnvironment({...runtime,SECRET:'fake'})).toEqual(runtime);
+});

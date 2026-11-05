@@ -1,9 +1,6 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve,basename} from 'node:path';
 
-import {duplicateItem} from './learn-parser';
-import {htmlOutlineText} from './outline-text';
-import {fingerprint,validateProposal} from './proposals';
 import type {Assignment} from '../src/lib/types';
 // During a scan the CLI delegates to the trusted helper; it never loads dotenv.
 if(process.env.ATRACKER_SCAN_TOKEN){
@@ -13,6 +10,9 @@ if(process.env.ATRACKER_SCAN_TOKEN){
  }catch{console.error('Scan CLI connection failed');process.exitCode=1}
 }else await main();
 async function main(){
+const {duplicateItem}=await import('./learn-parser');
+const {htmlOutlineText}=await import('./outline-text');
+const {fingerprint,validateProposal}=await import('./proposals');
 const {serverDB,owner}=await import('./server-db');
 const db=serverDB(),user_id=owner();
 async function docs(collection:string){const result=[];for(let from=0;;from+=1000){const {data,error}=await db.from('atracker_docs').select('id,data').eq('user_id',user_id).eq('collection',collection).order('id').range(from,from+999);if(error)throw error;result.push(...data);if(data.length<1000)return result}}

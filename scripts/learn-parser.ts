@@ -1,5 +1,5 @@
-import {calendarDay} from '../src/lib/format';
-import {defaultSections,type Assignment} from '../src/lib/types';
+import {calendarDay} from '../src/lib/format.ts';
+import {defaultSections,type Assignment} from '../src/lib/types.ts';
 export const normalizedTitle=(title:string)=>title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 // Interpret a wall time in Toronto, resolving the offset at the requested instant.
 export function torontoISO(wall:string){if(/(?:Z|[+-]\d{2}:\d{2})$/.test(wall))return new Date(wall).toISOString();const base=Date.parse(wall.endsWith('Z')?wall:wall+'Z');let instant=base;for(let i=0;i<3;i++){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));const represented=Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}Z`);instant=base-(represented-instant)}return new Date(instant).toISOString()}

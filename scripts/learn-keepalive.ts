@@ -16,7 +16,7 @@ const interval = 20 * 60 * 1000;
 const port = Number(process.env.ATRACKER_HELPER_PORT || 5199);
 const profileLocked = /SingletonLock|ProcessSingleton|profile.*(use|lock)|user data directory.*use/i;
 
-const { values } = parseArgs({ options: { until: { type: "string" } } });
+const { values } = parseArgs({ options: { until: { type: "string" }, once: { type: "boolean" } } });
 let deadline = Infinity;
 if (values.until !== undefined) {
   deadline = untilTime(values.until);
@@ -84,6 +84,7 @@ while (Date.now() < deadline) {
   } catch {
     console.error(`${new Date().toISOString()} keepalive round failed`);
   }
+  if (values.once) break;
   const delay = Math.min(Math.max(0, interval - (Date.now() - started)), deadline - Date.now());
   if (delay > 0) await sleep(delay);
 }
