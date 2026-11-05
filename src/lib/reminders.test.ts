@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {selectReminders,reminderWasSent,reminderDeliveryId} from './reminders';
 import {defaults,type Store,type Assignment} from './types';
 const assignment:Assignment={course:'ECE 105',title:'Quiz #7',type:'Quiz',remindOnly:true,dueDates:[{id:'m',label:'Due',datetime:'2026-11-02T04:30:00Z'}],estDays:2,steps:[],link:'',notes:'',status:'active',source:'manual'};
-const store=():Store=>({courses:{},tasks:{},proposals:{},pushSubs:{},reminderLog:{},scanRuns:{},settings:{main:defaults},assignments:{a:assignment}} satisfies Store);
+const store=():Store=>({briefs:{},courses:{},tasks:{},proposals:{},pushSubs:{},reminderLog:{},scanRuns:{},settings:{main:defaults},assignments:{a:assignment}} satisfies Store);
 const due=(s:Store,instant:string)=>selectReminders(s,new Date(instant)).filter(n=>n.id.startsWith('due/'));
 describe('reminder selection',()=>{
  it('selects one day-before notice at morning time in the configured timezone across DST',()=>{

@@ -1,0 +1,32 @@
+name: Send brief
+on:
+  workflow_dispatch:
+    inputs:
+      brief_id:
+        description: Saved brief identifier (empty sends latest unsent)
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: atracker-briefs
+  cancel-in-progress: false
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/send-brief.ts
+        env:
+          BRIEF_ID: ${{ inputs.brief_id }}
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}

@@ -4,8 +4,9 @@ export interface Task {assignmentId:string;stepId?:string;date:string;title:stri
 export interface Settings {sections?:string[];bufferDays:number;maxTasksPerDay:number;blackoutDates:string[];morning:string;evening:string;timezone:string}
 export interface Proposal {assignment:Assignment;status:'pending'|'approved'|'rejected';createdAt:string}
 export interface ScanRun {status:string;log:string;startedAt:string;finishedAt?:string;path?:string}
-export interface Collections {courses:Course;assignments:Assignment;tasks:Task;settings:Settings;proposals:Proposal;pushSubs:PushSubscriptionJSON;reminderLog:{sentAt:string};scanRuns:ScanRun}
-export const COLLECTIONS=['courses','assignments','tasks','settings','proposals','pushSubs','reminderLog','scanRuns'] as const;
+export interface Brief {date:string;title:string;summary:string;body:string;sentAt:string|null;kind?:'brief'|'alert'}
+export interface Collections {briefs:Brief;courses:Course;assignments:Assignment;tasks:Task;settings:Settings;proposals:Proposal;pushSubs:PushSubscriptionJSON;reminderLog:{sentAt:string};scanRuns:ScanRun}
+export const COLLECTIONS=['briefs','courses','assignments','tasks','settings','proposals','pushSubs','reminderLog','scanRuns'] as const;
 export type CollectionName=typeof COLLECTIONS[number];
 export type Store={[K in CollectionName]:Record<string,Collections[K]>};
 export const defaultSections=['MATH 117 TUT 109','MATH 115 TUT 107','ECE 105 TUT 109','ECE 150 LAB 203','ECE 150 TUT 103','ECE 190 LEC 003 Group 25','COMMST 192 LEC 006'];

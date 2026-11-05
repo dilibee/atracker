@@ -9,3 +9,5 @@
 
 .assignment-notes,.task .assignment-notes{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;white-space:normal;min-width:0;max-width:100%;margin-top:4px;color:#64748b;font-size:12px;line-height:1.5;font-weight:400}.goal{min-width:0}
 .item-card{display:flex;align-items:flex-start;gap:12px;background:white;border:1px solid #e2e5eb;border-top:4px solid;border-radius:12px;padding:16px;margin-bottom:14px;min-width:0;overflow-wrap:anywhere}.item-content{flex:1;min-width:0}.item-card .chip{display:inline-block;color:#64748b;border:1px solid;font-weight:500;max-width:100%}.item-card h3{margin:10px 0 4px}.item-card p{font-size:13px;color:#64748b;margin:9px 0}.item-card button{margin-top:10px}.item-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.item-actions .task-date{margin:0}.goals{grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr))}
+
+.brief-list {display:grid;gap:1rem;min-width:0}.brief-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.brief-list .panel{min-width:0;max-width:100%}
