@@ -28,7 +28,7 @@ The helper uses the supported `-s workspace-write` sandbox and a temporary broke
 ```
 
 Use source `outline` for PDF or HTML discoveries. Multiple milestone dates belong to a single item. Defaults: problem set 3 days, lab report 4, project 7, quiz 2, exam 7. The CLI validates and deduplicates course + normalized title + Toronto due date. Include `remindOnly` from the parser in proposal JSON. It writes only proposals; never modify existing assignments.
-5. After successfully processing an uploaded PDF or HTML file, run `node scripts/at.ts outline-done '<storage-path>'` using the path returned by the CLI.
+5. Run `node scripts/at.ts outline-done '<storage-path>'`, using the path returned by the CLI, only when every date in that PDF or HTML file was proposed or already exists and nothing is ambiguous. If any date is a range, TBA, or depends on Dilibe's team, section or individual schedule, do not run it: leave the outline pending and report what needs review.
 6. Finish with a brief summary of courses visited, proposals saved, duplicates, inaccessible pages, and ambiguous dates. The helper records run lifecycle in scanRuns. The user reviews proposals in Admin; approving creates an assignment and the planner creates its dated tasks.
 
 On Windows PowerShell, use `npm.cmd` in place of `npm` if script execution policy blocks npm.ps1. Pass JSON as one literal argument; do not build shell commands from extracted text.
@@ -44,5 +44,7 @@ Close all sign-in/scan windows and stop keepalive before signing in again. Run `
 Failed scans include the exit code, signal, and last 40 stderr lines with common credential formats redacted. Restart the running helper after updating these scripts. The outline action does not require a LEARN window or browser installation; scan and sign-in actions still do.
 
 Only after every required scan step succeeds, finish with the standalone line `ATRACKER_SCAN_COMPLETE`. Never emit this marker when tools, approval, CLI, endpoints, or required processing are blocked or failed. Report the blocker instead. This requirement does not apply to OUTLINE JSON mode.
+
+A 403 on section, group or community units is expected and does not block the marker: names like `1269-ECE.150.003.1.LEC`, `Sec 003 Group 25`, `Group 75` or `University of Waterloo` have no tools of their own, and the deadlines live on the course page (`ECE 150 - Fall 2026`). Report their count. A 403 or other failure on a course page does block the marker. Outlines left pending for review do not block it; list them in the summary.
 
 The broker path uses Node 24+ directly (`node scripts/at.ts`), without npm or tsx. Trusted database operations remain inside the helper. In the development sandbox, both inherited and filtered environments reproduce `os.userInfo()` ENOMEM; tsx calls this API during startup. The scan filter already retained Windows profile paths; USERNAME and USERDOMAIN are now retained too. Confirming the original scan identity requires a later authorized scan; do not weaken the sandbox.
