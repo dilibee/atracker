@@ -10,9 +10,11 @@ import {validateProposal} from './proposals';
 import {serverDB,owner} from './server-db';
 import {waitForKeepalive,HELPER_REQUEST_TIMEOUT_MS} from './keepalive-lock';
 import {scanResult} from './scan-result';
+import {proposalCounter,observingCli} from './scan-count';
 const port=Number(process.env.ATRACKER_HELPER_PORT||5199);
 const db=serverDB(),user_id=owner();let busy=false;let scanToken='';
-let scanState: {id:string;status:string}|undefined;
+let proposals=proposalCounter([]);
+let scanState: {id:string;status:string;proposalCount?:number}|undefined;
 const allowed=new Set([process.env.APP_ORIGIN,'http://localhost:5173','http://127.0.0.1:5173'].filter(Boolean));
 const save=async(id:string,data:unknown)=>{const {error}=await db.from('atracker_docs').upsert({user_id,collection:'scanRuns',id,data});if(error)throw error};
 createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
@@ -24,7 +26,7 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
    const argv:unknown=JSON.parse(body);
    if(!Array.isArray(argv)||argv.length>2||!argv.every(x=>typeof x==='string')||!['courses','scan-context','outlines','propose','outline-done'].includes(argv[0]))throw new Error('Invalid CLI command');
    const env={...process.env,DOTENV_CONFIG_QUIET:'true'};delete (env as NodeJS.ProcessEnv).ATRACKER_SCAN_TOKEN;
-   execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...argv],{env,windowsHide:true,timeout:120000,maxBuffer:8*1024*1024},(error,stdout)=>{res.writeHead(error?400:200,{'Content-Type':'text/plain'});res.end(error?'CLI failed; check proposal or local configuration.':stdout)});
+   execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...argv],{env,windowsHide:true,timeout:120000,maxBuffer:8*1024*1024},(error,stdout)=>{if(!error&&argv[0]==='propose')proposals.observe(stdout);res.writeHead(error?400:200,{'Content-Type':'text/plain'});res.end(error?'CLI failed; check proposal or local configuration.':stdout)});
   }catch{res.writeHead(400);res.end('Invalid CLI request')}
   return;
  }
@@ -33,7 +35,7 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
  res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Private-Network','true');res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');
  if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
  if(req.url==='/health'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify({ok:true,busy}));return}
- if(req.url==='/scan-status'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(scanState??{status:'idle'}));return}
+ if(req.url==='/scan-status'&&req.method==='GET'){res.setHeader('Content-Type','application/json');res.end(JSON.stringify(scanState?{...scanState,proposalCount:proposals.count}:{status:'idle'}));return}
  if(!['/scan','/outlines','/browser'].includes(req.url||'')||req.method!=='POST'){res.writeHead(404);res.end();return}
  if(!req.headers['content-type']?.startsWith('application/json')){res.writeHead(415);res.end('JSON required');return}
  if(busy){res.writeHead(409);res.end('A scan or sign-in window is already open. Close the LEARN window or wait for the check to finish.');return}
@@ -54,13 +56,19 @@ createServer({requestTimeout:HELPER_REQUEST_TIMEOUT_MS},async(req,res)=>{
  busy=true;const id=randomUUID(),startedAt=new Date().toISOString();let log='';
  try{
   await save(id,{status:'running',startedAt,log:outlineOnly?'Checking outline dates':'Starting Codex scan'});
-  scanState={id,status:'running'};
+  const existing:string[]=[];
+  for(let from=0;;from+=1000){
+   const {data,error}=await db.from('atracker_docs').select('id').match({user_id,collection:'proposals'}).order('id').range(from,from+999);
+   if(error)throw new Error('Could not initialize proposal count');
+   existing.push(...data.map(row=>row.id));if(data.length<1000)break;
+  }
+  proposals=proposalCounter(existing);scanState={id,status:'running'};
   await mkdir('data/scan-logs',{recursive:true});
   const summary=resolve('data/scan-logs',id+'.txt');
   const toolDir=resolve('data/scan-tools');await mkdir(toolDir,{recursive:true});
   const mcpArgs=[resolve('node_modules/@playwright/mcp/cli.js').replace(/\\/g,'/'),'--ignore-roots','--output-dir',toolDir.replace(/\\/g,'/'),'--executable-path',chromium.executablePath().replace(/\\/g,'/'),'--user-data-dir',resolve('data/browser').replace(/\\/g,'/')];
   const browserConfig=outlineOnly?[]:['-c','mcp_servers.playwright.default_tools_approval_mode="approve"','-c',`mcp_servers.playwright.command=${JSON.stringify(process.execPath.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.cwd=${JSON.stringify(toolDir.replace(/\\/g,'/'))}`,'-c',`mcp_servers.playwright.args=${JSON.stringify(mcpArgs)}`];
-  const cli=(args:string[])=>new Promise<string>((accept,reject)=>execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...args],{env:{...process.env,DOTENV_CONFIG_QUIET:'true'},windowsHide:true,timeout:120000,maxBuffer:32*1024*1024},(error,stdout,stderr)=>error?reject(new Error(redact(stderr||error.message))):accept(stdout)));
+  const cli=observingCli(proposals,(args:string[])=>new Promise<string>((accept,reject)=>execFile(process.execPath,['--import','tsx',resolve('scripts/at.ts'),...args],{env:{...process.env,DOTENV_CONFIG_QUIET:'true'},windowsHide:true,timeout:120000,maxBuffer:32*1024*1024},(error,stdout,stderr)=>error?reject(new Error(redact(stderr||error.message))):accept(stdout))));
   let prompt='Follow docs/scan-runbook.md completely. In the signed-in Playwright tab use page fetch() for D2L REST APIs, enumerate ALL active org units, include today from Toronto midnight, and normalize with scripts/learn-parser.ts (StartDay for all-day events, never exclusive EndDay). Load scan-context for settings.sections and existing assignments; filter sections/groups and dedupe by course, normalized title and Toronto date. Never read .env, data/browser files, or any service-role key. Use only the at broker CLI for proposals. Do not commit, push or deploy.';
   const outlines: {path:string;error?:string;pages?:unknown}[]=[];
   let courseCodes=new Set<string>();
